@@ -13,8 +13,9 @@ import { useThemeStore } from './store/useThemeStore';
 import { Navigate } from 'react-router-dom';
 
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth } = useAuthstore();
+  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthstore();
   const { theme } = useThemeStore();
+  console.log('onlineusers = ', onlineUsers);
 
   useEffect(() => {
     checkAuth();

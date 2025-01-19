@@ -1,19 +1,24 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
+import { io } from "socket.io-client";
 
-export const useAuthstore = create((set) => ({
+const BASE_URL = import.meta.env.MODE == "development" ? "http://localhost:5001" : "/";
+
+export const useAuthstore = create((set, get) => ({
     authUser: null,
     isCheckingAuth: true,
     isSigningUp: false,
     isLoggingIn: false,
     isUpdatingProfile: false,
     onlineUsers: [],
+    socket: null,
 
     checkAuth: async() => {
         try {
             const res = axiosInstance.get("/auth/check");
             set({authUser: res.data});
+            get().connectSocket();
         } catch (error) {
             console.log("error occurred in authstore = ", error);
             set({authUser: null});
@@ -29,6 +34,7 @@ export const useAuthstore = create((set) => ({
             const res = await axiosInstance.post("/auth/signup", data);
             toast.success("Account Created succesfully");
             set({authUser: res.data});
+            get().connectSocket();
         } catch (error) {
             toast.error(error.response.data.message);
             console.log("error occurred during signup = ", error);
@@ -43,8 +49,7 @@ export const useAuthstore = create((set) => ({
           const res = await axiosInstance.post("/auth/login", data);
           set({ authUser: res.data });
           toast.success("Logged in successfully");
-    
-          //get().connectSocket();
+          get().connectSocket();
         } catch (error) {
           toast.error(error.response.data.message);
         } finally {
@@ -57,6 +62,7 @@ export const useAuthstore = create((set) => ({
             await axiosInstance.post("/auth/logout");
             set({authUser: null});
             toast.success("Logged out succesfully");
+            get().disconnectSocket();
         } catch (error) {
             toast.error(error.response.data.message);
             console.log("error occurred during signup = ", error);
@@ -75,7 +81,29 @@ export const useAuthstore = create((set) => ({
         } finally {
             set({isUpdatingProfile: false});
         }
-    }
+    },
+
+    connectSocket: async() => {
+        const {authUser} = get();
+        if(!authUser || get().socket?.connected) return;
+        const socket = io(BASE_URL, {
+            query : {
+                userId: authUser._id
+            }
+        });
+        console.log('socket = ', socket);
+        socket.connect();
+        set({socket: socket});
+
+        socket.on("getOnlineUsers", (userIds) => {
+            set({onlineUsers: userIds});
+        })
+    },
+    disconnectSocket: async() => {
+        if(get().socket?.connected){
+            get().socket.disconnect();
+        }
+    },
 
 
 }))
