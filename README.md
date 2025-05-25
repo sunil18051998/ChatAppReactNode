@@ -67,7 +67,7 @@ npm start
 ## 🌐 Live Demo
 
 Access the live version of the application at:
-https://chatappreactnode-6drs.onrender.com/
+https://chat-app-react-node-alpha.vercel.app/login
 
 ## 📝 License
 
